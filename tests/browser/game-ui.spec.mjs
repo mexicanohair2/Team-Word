@@ -41,3 +41,28 @@ test("guest mode is available without a Supabase session", async ({ page }) => {
   await expect(page.locator(".keyboard")).toBeVisible();
   await expect(page.locator(".screen")).toContainText("ОДИНОЧНАЯ ИГРА");
 });
+
+test("Team Word fits a Pixel-sized viewport without horizontal scrolling", async ({ browser }) => {
+  const { devices } = await import("@playwright/test");
+  const context = await browser.newContext({ ...devices["Pixel 7"] });
+  const page = await context.newPage();
+  const supabaseStub = `
+    window.supabase = {
+      createClient() {
+        return { auth: { getSession: async () => ({ data: { session: null }, error: null }) } };
+      }
+    };
+  `;
+  await page.route(/https:\/\/(cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js|unpkg\.com\/@supabase\/supabase-js)/, route =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: supabaseStub })
+  );
+  await page.goto("/");
+  await page.locator("#soloStart").click();
+  await expect(page.locator(".keyboard")).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth
+  }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+  await context.close();
+});
