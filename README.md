@@ -33,3 +33,13 @@ Team Word — командная игра, в которой все участн
 `npm test` запускает Node.js unit-тесты для словаря, нормализации, раскрытия букв, оценки повторяющихся символов и поведения бота. GitHub Actions выполняет тесты перед публикацией Pages.
 
 Реальную работу нескольких устройств необходимо отдельно подтвердить двумя независимыми аккаунтами QQCross после публикации. Unit-тесты не заменяют этот сетевой тест.
+
+## GitHub Pages
+
+Перед первым запуском включи Pages для репозитория:
+
+1. Открой [Settings → Pages](https://github.com/mexicanohair2/Team-Word/settings/pages).
+2. В разделе **Build and deployment** выбери **Source: GitHub Actions**.
+3. Открой вкладку [Actions](https://github.com/mexicanohair2/Team-Word/actions) и повтори workflow **Test and deploy**.
+
+Workflow сперва запускает `node --check app.js` и `node --test`; публикация выполняется только после успешного тестового задания. Сейчас автоматические тесты проходят. GitHub блокирует создание Pages site из workflow-токена, пока источник Pages не выбран в настройках репозитория.
