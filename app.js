@@ -251,6 +251,7 @@ function clearRoomInviteParam(){
 async function joinRoomByCode(code) {
   if (!requireNetworkProfile()) return false;
   if (!/^[A-Z0-9]{6}$/.test(code)) {
+    clearRoomInviteParam();
     toast("Код приглашения должен содержать шесть символов.");
     return false;
   }
