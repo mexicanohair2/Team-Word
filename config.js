@@ -5,5 +5,5 @@ window.QQ_CONFIG = Object.freeze({
   supabasePublishableKey: "sb_publishable_2PD3wYGG1aYoxRqhyM8wMA_OIQrwm3k",
   qqCrossUrl: "https://mexicanohair2.github.io/QQcross/",
   game: "team_word",
-  maxPlayers: 12
+  maxPlayers: 32
 });
