@@ -43,3 +43,7 @@ Team Word — командная игра, в которой все участн
 3. Открой вкладку [Actions](https://github.com/mexicanohair2/Team-Word/actions) и повтори workflow **Test and deploy**.
 
 Workflow сперва запускает `node --check app.js` и `node --test`; публикация выполняется только после успешного тестового задания. Сейчас автоматические тесты проходят. GitHub блокирует создание Pages site из workflow-токена, пока источник Pages не выбран в настройках репозитория.
+
+## Архитектура общего QQCross
+
+Полный интерфейс интеграции, схема серверных таблиц, RPC, Realtime и правила доступа описаны в [документе общего контракта QQCross](https://github.com/mexicanohair2/QQcross/blob/main/docs/QQ_PARTY_GAMES_CONTRACT.md).
