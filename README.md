@@ -34,15 +34,21 @@ Team Word — командная игра, в которой все участн
 
 Реальную работу нескольких устройств необходимо отдельно подтвердить двумя независимыми аккаунтами QQCross после публикации. Unit-тесты не заменяют этот сетевой тест.
 
-## GitHub Pages
+## Публичный запуск
 
-Перед первым запуском включи Pages для репозитория:
+Текущая публичная публикация: **https://qqcross-team-word.vercel.app/**
+
+Приложение развёрнуто из этого GitHub-репозитория как статический сайт в Vercel. Автоматическое обновление от каждого git push пока не подключено, поэтому при изменении файлов нужно повторить deployment.
+
+## GitHub Pages — альтернативный вариант
+
+GitHub Pages workflow уже настроен, но сам Pages Site не создан, потому что GitHub блокирует его создание из подключённой интеграции.
 
 1. Открой [Settings → Pages](https://github.com/mexicanohair2/Team-Word/settings/pages).
 2. В разделе **Build and deployment** выбери **Source: GitHub Actions**.
 3. Открой вкладку [Actions](https://github.com/mexicanohair2/Team-Word/actions) и повтори workflow **Test and deploy**.
 
-Workflow сперва запускает `node --check app.js` и `node --test`; публикация выполняется только после успешного тестового задания. Сейчас автоматические тесты проходят. GitHub блокирует создание Pages site из workflow-токена, пока источник Pages не выбран в настройках репозитория.
+Workflow запускает `node --check app.js` и `node --test`; публикация выполняется только после успешного тестового задания.
 
 ## Архитектура общего QQCross
 
