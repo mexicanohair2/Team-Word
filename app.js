@@ -239,6 +239,15 @@ async function createRoom() {
     button.disabled = false;
   }
 }
+function clearRoomInviteParam(){
+  try{
+    const url=new URL(location.href);
+    if(!url.searchParams.has("room"))return;
+    url.searchParams.delete("room");
+    const query=url.searchParams.toString();
+    history.replaceState(history.state,"",url.pathname+(query?"?"+query:"")+url.hash);
+  }catch(error){console.warn("Invite URL cleanup:",error);}
+}
 async function joinRoomByCode(code) {
   if (!requireNetworkProfile()) return false;
   if (!/^[A-Z0-9]{6}$/.test(code)) {
@@ -253,9 +262,11 @@ async function joinRoomByCode(code) {
     state.roomId = result.room_id;
     state.roomCode = result.code;
     localStorage.setItem("qq-team-word-room", state.roomId);
+    clearRoomInviteParam();
     await openRoom();
     return true;
   } catch (error) {
+    clearRoomInviteParam();
     toast(friendlyError(error));
     return false;
   }
