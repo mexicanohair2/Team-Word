@@ -282,9 +282,18 @@ async function refreshRoom(showErrors = true) {
   if (!state.roomId || !supabase) return;
   try {
     const data = await rpc("qq_party_get_room", { p_room_id: state.roomId });
+    const changed = JSON.stringify(data) !== JSON.stringify(state.room);
     state.room = data;
     state.roomCode = data.code;
-    render();
+    if (changed) render();
+    if (data.status === "playing") {
+      const deadline = data.public_state?.next_reveal_at;
+      const node = $("#nextReveal");
+      if (node && deadline) {
+        const seconds = Math.max(0, Math.ceil((new Date(deadline).getTime() - Date.now()) / 1000));
+        node.textContent = "Новая буква через " + seconds + " сек.";
+      }
+    }
   } catch (error) {
     if (showErrors) console.warn("Team Word room refresh:", error);
   }
@@ -468,8 +477,14 @@ function soloTick() {
     const next = revealRandomLetter(solo.word,solo.revealed);
     if (next) solo.revealed.push(next);
     solo.nextRevealAt += 15000;
+    render();
+    return;
   }
-  render();
+  const node = $("#soloTimer");
+  if (node) {
+    const seconds = Math.max(0, Math.ceil((solo.nextRevealAt - now) / 1000));
+    node.textContent = "Буква через " + seconds + " сек.";
+  }
 }
 function scheduleBotGuess() {
   clearTimeout(state.botTimer);
@@ -532,7 +547,7 @@ function renderSoloGame() {
         <button class="btn ghost" id="soloExit">Выйти</button>
       </header>
       <section class="card stack">
-        <div class="game-meta"><span>Общее слово · ${solo.word.length} букв</span><span>${solo.status==="playing"?"Буква через "+next+" сек.":"Раунд завершён"}</span></div>
+        <div class="game-meta"><span>Общее слово · ${solo.word.length} букв</span><span id="soloTimer">${solo.status==="playing"?"Буква через "+next+" сек.":"Раунд завершён"}</span></div>
         <div class="word-slots">${Array.from({length:solo.word.length},(_,index)=>'<div class="word-slot '+(open.has(index)?"open":"")+'">'+(open.get(index)||"")+'</div>').join("")}</div>
         <p class="small muted" style="text-align:center;margin:0">Боты думают медленно и иногда ошибаются. Они видят только открытые буквы и историю попыток.</p>
       </section>
