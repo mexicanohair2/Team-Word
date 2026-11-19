@@ -169,6 +169,11 @@ function renderHome() {
   $("#createRoom")?.addEventListener("click", createRoom);
   $("#joinForm")?.addEventListener("submit", joinRoom);
 }
+const requestedRoomCode = (() => {
+  try { return (new URLSearchParams(location.search).get("room") || "").trim().toUpperCase(); }
+  catch { return ""; }
+})();
+
 async function signIn(event) {
   event.preventDefault();
   if (!supabase) return toast("Не загрузился Supabase. Обнови страницу.");
@@ -181,8 +186,11 @@ async function signIn(event) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     await loadProfile(data.user.id);
-    toast("Вход выполнен через QQCross.");
-    render();
+    if (requestedRoomCode) await joinRoomByCode(requestedRoomCode);
+    else {
+      toast("Вход выполнен через QQCross.");
+      render();
+    }
   } catch (error) {
     toast(friendlyError(error));
   } finally {
@@ -229,13 +237,12 @@ async function createRoom() {
     button.disabled = false;
   }
 }
-async function joinRoom(event) {
-  event.preventDefault();
-  if (!requireNetworkProfile()) return;
-  const code = $("#roomCode").value.trim().toUpperCase();
-  if (!/^[A-Z0-9]{6}$/.test(code)) return toast("Введи шестизначный код комнаты.");
-  const button = event.currentTarget.querySelector("button[type=submit]");
-  button.disabled = true;
+async function joinRoomByCode(code) {
+  if (!requireNetworkProfile()) return false;
+  if (!/^[A-Z0-9]{6}$/.test(code)) {
+    toast("Код приглашения должен содержать шесть символов.");
+    return false;
+  }
   try {
     const result = await rpc("qq_party_join_room", {
       p_code: code,
@@ -245,8 +252,19 @@ async function joinRoom(event) {
     state.roomCode = result.code;
     localStorage.setItem("qq-team-word-room", state.roomId);
     await openRoom();
+    return true;
   } catch (error) {
     toast(friendlyError(error));
+    return false;
+  }
+}
+async function joinRoom(event) {
+  event.preventDefault();
+  if (!requireNetworkProfile()) return;
+  const button = event.currentTarget.querySelector("button[type=submit]");
+  button.disabled = true;
+  try {
+    await joinRoomByCode($("#roomCode").value.trim().toUpperCase());
   } finally { button.disabled = false; }
 }
 async function openRoom() {
@@ -361,13 +379,54 @@ function renderLobby() {
         <div class="game-meta"><b>Участники</b><span>${players.length}/${state.room.player_limit}</span></div>
         <div class="player-grid">${renderPlayers(players)}</div>
         <div class="notice">${host ? "Когда присоединится хотя бы один друг, можно начать общий раунд." : "Ожидаем, пока создатель начнёт игру."}</div>
+      </section>
+      <section class="card stack">
+        <h3>Пригласить друзей QQCross</h3>
+        <div id="roomFriends"><p class="small muted">Загружаем список друзей…</p></div>
         ${host ? '<button class="btn primary full" id="startRound" '+(players.length<2?"disabled":"")+'>'+(state.busy?"Запуск…":"Начать раунд")+'</button>' : ""}
         <button class="btn ghost full" id="leaveRoom">Выйти из комнаты</button>
       </section>
     </section>`;
   $("#copyCode").onclick = copyRoomCode;
   $("#startRound")?.addEventListener("click", startOnlineRound);
+  loadRoomFriends();
   $("#leaveRoom").onclick = leaveRoom;
+}
+async function loadRoomFriends() {
+  const root = $("#roomFriends");
+  if (!root || !state.roomId) return;
+  try {
+    const friends = await rpc("qq_party_list_friends", { p_room_id: state.roomId });
+    if (!friends?.length) {
+      root.innerHTML = '<p class="small muted">Добавь друзей в QQCross — здесь появится список для приглашения.</p>';
+      return;
+    }
+    root.innerHTML = friends.map(friend => {
+      const disabled = friend.in_room || friend.already_invited;
+      const label = friend.in_room ? "Уже в комнате" : friend.already_invited ? "Приглашение отправлено" : "Пригласить";
+      return '<div class="room-friend-row"><span class="avatar">'+avatar(friend.avatar)+'</span><span class="room-friend-name">'+esc(friend.username)+'</span><button class="btn '+(disabled?'':'primary')+' room-friend-invite" data-id="'+esc(friend.user_id)+'" '+(disabled?'disabled':'')+'>'+label+'</button></div>';
+    }).join("");
+    root.querySelectorAll(".room-friend-invite:not(:disabled)").forEach(button => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        button.textContent = "Отправляем…";
+        try {
+          const result = await rpc("qq_party_invite_friend", {
+            p_room_id: state.roomId,
+            p_friend_id: button.dataset.id
+          });
+          button.textContent = result.already_pending ? "Уже приглашён" : "Приглашение отправлено";
+          toast(result.already_pending ? "Приглашение уже отправлено." : "Приглашение отправлено другу QQCross.");
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "Пригласить";
+          toast(friendlyError(error));
+        }
+      });
+    });
+  } catch (error) {
+    root.innerHTML = '<p class="small muted">Не удалось загрузить друзей: '+esc(friendlyError(error))+'</p>';
+  }
 }
 function renderHistory(guesses = []) {
   if (!guesses.length) return '<p class="small muted" style="text-align:center">Пока нет попыток. Первое слово может отправить любой игрок.</p>';
@@ -593,10 +652,14 @@ async function restore() {
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
       if (data.session?.user?.id) await loadProfile(data.session.user.id);
-      const savedRoom = localStorage.getItem("qq-team-word-room");
-      if (savedRoom && state.profile) {
-        state.roomId = savedRoom;
-        await openRoom();
+      if (state.profile && requestedRoomCode) {
+        await joinRoomByCode(requestedRoomCode);
+      } else {
+        const savedRoom = localStorage.getItem("qq-team-word-room");
+        if (savedRoom && state.profile) {
+          state.roomId = savedRoom;
+          await openRoom();
+        }
       }
     } catch (error) {
       console.warn("Team Word auth restore:",error);
