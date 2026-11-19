@@ -381,12 +381,12 @@ function renderLobby() {
         <div class="game-meta"><b>Участники</b><span>${players.length}/${state.room.player_limit}</span></div>
         <div class="player-grid">${renderPlayers(players)}</div>
         <div class="notice">${host ? "Когда присоединится хотя бы один друг, можно начать общий раунд." : "Ожидаем, пока создатель начнёт игру."}</div>
+        ${host ? '<button class="btn primary full" id="startRound" '+(players.length<2?"disabled":"")+'>'+(state.busy?"Запуск…":"Начать раунд")+'</button>' : ""}
+        <button class="btn ghost full" id="leaveRoom">Выйти из комнаты</button>
       </section>
       <section class="card stack">
         <h3>Пригласить друзей QQCross</h3>
         <div id="roomFriends"><p class="small muted">Загружаем список друзей…</p></div>
-        ${host ? '<button class="btn primary full" id="startRound" '+(players.length<2?"disabled":"")+'>'+(state.busy?"Запуск…":"Начать раунд")+'</button>' : ""}
-        <button class="btn ghost full" id="leaveRoom">Выйти из комнаты</button>
       </section>
     </section>`;
   $("#copyCode").onclick = copyRoomCode;
