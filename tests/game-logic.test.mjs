@@ -28,7 +28,7 @@ test("letter reveal opens one previously hidden position", () => {
 });
 
 test("score handles repeated letters without over-crediting", () => {
-  assert.deepEqual(scoreWordGuess("банан","ананас").slice(0,5),["yellow","green","green","green","yellow"]);
+  assert.deepEqual(scoreWordGuess("банан","ананас"),["miss","yellow","yellow","yellow","yellow"]);
 });
 
 test("bot guesses only words consistent with visible information", () => {
